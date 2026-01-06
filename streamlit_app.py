@@ -7,5 +7,4 @@ st.set_page_config(
 )
 
 st.title("Hello Streamlit 👋")
-st.write("This app is written directly in GitHub.")
 st.write("Version 2")
