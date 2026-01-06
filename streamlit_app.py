@@ -6,5 +6,5 @@ st.set_page_config(
     layout="wide"
 )
 
-st.title("Hello Streamlit 👋")
+st.title("Hello bro Streamlit 👋")
 st.write("Version 2")
