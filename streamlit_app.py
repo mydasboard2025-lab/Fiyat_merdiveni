@@ -200,6 +200,13 @@ fig, ax = plt.subplots(figsize=(fig_w, fig_h))
 
 # points
 ax.scatter(df["x"], df[y_col])
+# ---- Precise X scaling (no auto padding) ----
+xmin = df["x"].min()
+xmax = df["x"].max()
+x_pad = max((xmax - xmin) * 0.05, 0.02)  # %5 veya min 0.02
+
+ax.set_xlim(xmin - x_pad, xmax + x_pad)
+ax.margins(x=0)
 
 # axis formatting
 ax.set_title(
