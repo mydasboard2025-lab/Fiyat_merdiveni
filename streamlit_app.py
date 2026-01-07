@@ -71,7 +71,7 @@ st.subheader("1) Veri Girişi")
 tab1, tab2 = st.tabs(["Manuel giriş", "CSV yükle"])
 
 with tab1:
-    st.caption("Her satır bir araç. Fiyat: Liste fiyatı. İndirim opsiyonel (%). GP opsiyonel.")
+    st.caption("Her satır bir araç. Fiyat: Liste fiyatı. İndirim opsiyonel (%). GP opsiyonel. X_pos: grafikte yatay konum (1,2,3...).")
     default_rows = 8
     df_manual = pd.DataFrame({
         "model": ["BMW X1 xDrive25e – M Sport"] + [""]*(default_rows-1),
@@ -79,7 +79,9 @@ with tab1:
         "discount_pct": ["6%"] + [""]*(default_rows-1),
         "gross_profit": [""] + [""]*(default_rows-1),
         "note": [""] + [""]*(default_rows-1),
+        "x_pos": [1] + [""]*(default_rows-1),  # ✅ yeni kolon
     })
+
     edited = st.data_editor(
         df_manual,
         use_container_width=True,
@@ -90,9 +92,16 @@ with tab1:
             "discount_pct": st.column_config.TextColumn("İndirim (%)", help="6% veya 6 veya 0.06"),
             "gross_profit": st.column_config.TextColumn("GP (opsiyonel)", help="Örn: 4.033€ veya 4033"),
             "note": st.column_config.TextColumn("Not (opsiyonel)"),
+            "x_pos": st.column_config.NumberColumn(
+                "X (Yatay Konum)",
+                help="Soldan sağa yerleşim. Örn: 1,2,3... Boş bırakılırsa otomatik.",
+                min_value=1,
+                step=1,
+            ),
         },
     )
     df_in = edited.copy()
+
 
 with tab2:
     st.caption("CSV kolonları: model, price_list, discount_pct, gross_profit, note")
@@ -166,7 +175,21 @@ max_p = float(df[y_col].max())
 rng = max(max_p - min_p, 1.0)
 
 # x positions = ladder steps
-df["x"] = range(len(df))
+# X positions: user-defined (x_pos) if provided, otherwise auto 1..N
+if "x_pos" in df.columns:
+    df["x_pos_num"] = pd.to_numeric(df["x_pos"], errors="coerce")
+else:
+    df["x_pos_num"] = None
+    
+# auto-fill missing x positions with 1..N
+missing = df["x_pos_num"].isna()
+if missing.any():
+    auto_vals = list(range(1, missing.sum() + 1))
+    df.loc[missing, "x_pos_num"] = auto_vals
+
+df["x"] = df["x_pos_num"].astype(float)
+
+
 
 fig_w = max(9, min(16, 0.9 * len(df) + 6))
 fig_h = 6
