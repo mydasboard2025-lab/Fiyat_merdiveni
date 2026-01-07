@@ -79,7 +79,7 @@ with tab1:
         "discount_pct": ["6%"] + [""]*(default_rows-1),
         "gross_profit": [""] + [""]*(default_rows-1),
         "note": [""] + [""]*(default_rows-1),
-        "x_pos": [1] + [None]*(default_rows-1),  # ✅ yeni kolon
+        "x_pos": ["1"] + [""]*(default_rows-1),  # ✅ yeni kolon
     })
 
     edited = st.data_editor(
@@ -175,9 +175,13 @@ rng = max(max_p - min_p, 1.0)
 # x positions = ladder steps
 # X positions: user-defined (x_pos) if provided, otherwise auto 1..N
 if "x_pos" in df.columns:
-    df["x_pos_num"] = pd.to_numeric(df["x_pos"], errors="coerce")
+    df["x_pos_num"] = pd.to_numeric(
+        df["x_pos"].astype(str).str.replace(",", ".", regex=False).str.strip(),
+        errors="coerce"
+    )
 else:
     df["x_pos_num"] = None
+
     
 # auto-fill missing x positions with 1..N
 missing = df["x_pos_num"].isna()
