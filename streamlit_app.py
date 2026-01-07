@@ -176,15 +176,6 @@ fig, ax = plt.subplots(figsize=(fig_w, fig_h))
 # points
 ax.scatter(df["x"], df[y_col])
 
-# ladder lines (horizontal + vertical connectors)
-for i in range(len(df) - 1):
-    x0, y0 = df.loc[i, "x"], df.loc[i, y_col]
-    x1, y1 = df.loc[i + 1, "x"], df.loc[i + 1, y_col]
-    # vertical line at next step
-    ax.plot([x1, x1], [y0, y1])
-    # horizontal line from current to next
-    ax.plot([x0, x1], [y0, y0])
-
 # axis formatting
 ax.set_title(title_left + (f"\n{subtitle}" if subtitle else ""))
 ax.set_xlabel("")
