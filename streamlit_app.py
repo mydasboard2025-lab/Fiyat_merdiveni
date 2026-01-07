@@ -92,11 +92,9 @@ with tab1:
             "discount_pct": st.column_config.TextColumn("İndirim (%)", help="6% veya 6 veya 0.06"),
             "gross_profit": st.column_config.TextColumn("GP (opsiyonel)", help="Örn: 4.033€ veya 4033"),
             "note": st.column_config.TextColumn("Not (opsiyonel)"),
-            "x_pos": st.column_config.NumberColumn(
+            "x_pos": st.column_config.TextColumn(
                 "X (Yatay Konum)",
-                help="Soldan sağa yerleşim. Örn: 1,2,3... Boş bırakılırsa otomatik.",
-                min_value=1,
-                step=1,
+                help="Ondalıklı girebilirsin: Virgül kabul, boş bırakılırsa otomatik.",
             ),
         },
     )
