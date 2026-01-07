@@ -206,7 +206,7 @@ ax.set_title(
     title_left,
     fontsize=17,        # başlık boyutu (16–20 arası iyi)
     fontweight="bold",  # kalın
-    pad=28              # başlığı yukarı iter
+    pad=25              # başlığı yukarı iter
 )
 ax.set_xlabel("")
 ax.set_ylabel("Fiyat (₺)")
