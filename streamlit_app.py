@@ -100,8 +100,6 @@ with tab2:
     if up is not None:
         df_csv = pd.read_csv(up)
         df_in = df_csv.copy()
-    else:
-        df_in = None
 
 # ---------- Process ----------
 st.subheader("2) Grafik Ayarları")
