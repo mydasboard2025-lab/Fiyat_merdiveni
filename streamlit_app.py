@@ -271,6 +271,7 @@ if show_labels:
 
 
 ax.grid(True, axis="y", linestyle="--", alpha=0.3)
+fig.tight_layout()
 st.pyplot(fig, use_container_width=True)
 
 # Table view
