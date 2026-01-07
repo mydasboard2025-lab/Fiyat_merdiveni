@@ -269,7 +269,12 @@ if show_labels:
             color="#333333",
         )
 
+# Give labels some breathing room
+pad = 0.12  # increase if needed (0.15)
+ax.set_ylim(min_p - rng * 0.05, max_p + rng * pad)
 
+# Make plotting area larger inside the figure
+fig.subplots_adjust(left=0.07, right=0.98, top=0.90, bottom=0.08)
 ax.grid(True, axis="y", linestyle="--", alpha=0.3)
 fig.tight_layout()
 st.pyplot(fig, use_container_width=True)
