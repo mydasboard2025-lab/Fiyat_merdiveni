@@ -202,7 +202,12 @@ fig, ax = plt.subplots(figsize=(fig_w, fig_h))
 ax.scatter(df["x"], df[y_col])
 
 # axis formatting
-ax.set_title(title_left + (f"\n{subtitle}" if subtitle else ""))
+ax.set_title(
+    title_left,
+    fontsize=17,        # başlık boyutu (16–20 arası iyi)
+    fontweight="bold",  # kalın
+    pad=28              # başlığı yukarı iter
+)
 ax.set_xlabel("")
 ax.set_ylabel("Fiyat (₺)")
 
