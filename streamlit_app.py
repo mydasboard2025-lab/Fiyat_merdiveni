@@ -197,40 +197,62 @@ ax.set_yticklabels([format_try(v) for v in yticks])
 # Remove x ticks (we label points)
 ax.set_xticks([])
 
-# Labels
+# Labels (2-line: model in bold blue, details smaller underneath)
 if show_labels:
     for i in range(len(df)):
+        x = df.loc[i, "x"]
+        y = df.loc[i, y_col]
+
         model = df.loc[i, "model"]
+
+        # What to show as "price" (net or list depending on selection)
         price_show = df.loc[i, y_col]
+
         discount = df.loc[i, "discount_frac"]
         gp = df.loc[i, "gross_profit_str"]
         note = df.loc[i, "note"]
 
-        parts = []
-        if label_mode.startswith("Model"):
-            parts.append(model)
+        # --- Line 1: model (blue + bold)
+        ax.annotate(
+            model,
+            (x, y),
+            textcoords="offset points",
+            xytext=(0, 16),
+            ha="center",
+            va="bottom",
+            fontsize=10,
+            fontweight="bold",
+            color="#1f77b4",  # nice blue (BMW-like)
+        )
 
-        parts.append(format_try(price_show))
+        # --- Line 2: details (smaller)
+        details_parts = [format_try(price_show)]
 
-        if "İndirim" in label_mode and discount and discount > 0:
-            parts.append(f"({discount*100:.0f}% ind.)")
+        # discount in parentheses
+        if discount and discount > 0:
+            details_parts.append(f"({discount*100:.0f}% indirim)")
 
-        if "GP" in label_mode and gp and gp.lower() not in {"nan", "none"}:
-            parts.append(f"GP: {gp}")
+        # GP
+        if gp and gp.lower() not in {"nan", "none", ""}:
+            details_parts.append(f"GP: {gp}")
 
+        # optional note (you can comment this out if you don't want it)
         if note:
-            parts.append(note)
+            details_parts.append(note)
 
-        label = " ".join(parts)
+        details = " ".join(details_parts)
 
         ax.annotate(
-            label,
-            (df.loc[i, "x"], df.loc[i, y_col]),
+            details,
+            (x, y),
             textcoords="offset points",
-            xytext=(0, 10),
+            xytext=(0, 2),
             ha="center",
-            fontsize=9,
+            va="bottom",
+            fontsize=8,
+            color="#333333",
         )
+
 
 ax.grid(True, axis="y", linestyle="--", alpha=0.3)
 st.pyplot(fig, use_container_width=True)
