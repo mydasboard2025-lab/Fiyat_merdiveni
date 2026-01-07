@@ -217,7 +217,7 @@ if show_labels:
             model,
             (x, y),
             textcoords="offset points",
-            xytext=(0, 16),
+            xytext=(0, 13),
             ha="center",
             va="bottom",
             fontsize=10,
