@@ -71,7 +71,7 @@ st.subheader("1) Veri Girişi")
 tab1, tab2 = st.tabs(["Manuel giriş", "CSV yükle"])
 
 with tab1:
-    st.caption("Her satır bir araç. Fiyat: Liste fiyatı. İndirim opsiyonel (%). GP opsiyonel. X_pos: grafikte yatay konum (1,2,3...).")
+    st.caption("Her satır bir araç. Fiyat: Liste fiyatı. İndirim opsiyonel (%). GP opsiyonel. X_pos: grafikte yatay konum (0,1).")
     default_rows = 8
     df_manual = pd.DataFrame({
         "model": ["BMW X1 xDrive25e – M Sport"] + [""]*(default_rows-1),
@@ -93,7 +93,7 @@ with tab1:
             "gross_profit": st.column_config.TextColumn("GP (opsiyonel)", help="Örn: 4.033€ veya 4033"),
             "note": st.column_config.TextColumn("Not (opsiyonel)"),
             "x_pos": st.column_config.TextColumn(
-                "X (Yatay Konum)",
+                "X (Yatay Konum (0,1))",
                 help="Ondalıklı girebilirsin: Virgül kabul, boş bırakılırsa otomatik.",
             ),
         },
