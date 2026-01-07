@@ -71,7 +71,7 @@ st.subheader("1) Veri Girişi")
 tab1, tab2 = st.tabs(["Manuel giriş", "CSV yükle"])
 
 with tab1:
-    st.caption("Her satır bir araç. Fiyat: Liste fiyatı. İndirim opsiyonel (%). GP opsiyonel. X_pos: grafikte yatay konum (0,1).")
+    st.caption("Her satır bir araç. Fiyat: Liste fiyatı. İndirim opsiyonel (%). GP opsiyonel. X_pos: grafikte yatay konum (0,1) arası, Öneri: Sol kolon: 0.18, Orta kolon: 0.50, Sağ kolon: 0.82.")
     default_rows = 8
     df_manual = pd.DataFrame({
         "model": ["BMW X1 xDrive25e – M Sport"] + [""]*(default_rows-1),
