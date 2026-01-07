@@ -79,7 +79,7 @@ with tab1:
         "discount_pct": ["6%"] + [""]*(default_rows-1),
         "gross_profit": [""] + [""]*(default_rows-1),
         "note": [""] + [""]*(default_rows-1),
-        "x_pos": [1] + [""]*(default_rows-1),  # ✅ yeni kolon
+        "x_pos": [1] + [None]*(default_rows-1),  # ✅ yeni kolon
     })
 
     edited = st.data_editor(
