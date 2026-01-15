@@ -2,6 +2,9 @@ import re
 import pandas as pd
 import streamlit as st
 import matplotlib.pyplot as plt
+from pathlib import Path
+from PIL import Image
+from matplotlib.offsetbox import OffsetImage, AnnotationBbox
 
 st.set_page_config(page_title="Fiyat Merdiveni", layout="wide")
 st.title("Fiyat Merdiveni")
