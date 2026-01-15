@@ -1,13 +1,17 @@
 import re
+from pathlib import Path
+
 import pandas as pd
 import streamlit as st
 import matplotlib.pyplot as plt
-from pathlib import Path
+
 from PIL import Image
 from matplotlib.offsetbox import OffsetImage, AnnotationBbox
 
+
 st.set_page_config(page_title="Fiyat Merdiveni", layout="wide")
 st.title("Fiyat Merdiveni")
+
 
 # ---------- Helpers ----------
 def parse_money(x):
@@ -33,6 +37,7 @@ def parse_money(x):
     if digits == "":
         return None
     return float(digits)
+
 
 def parse_percent(x):
     """
@@ -62,27 +67,56 @@ def parse_percent(x):
     except:
         return 0.0
 
+
 def format_try(v):
     if v is None or pd.isna(v):
         return ""
     v = float(v)
     return f"{v:,.0f} ₺".replace(",", ".")
 
+
+def list_image_codes(brand_folder: str) -> list[str]:
+    """
+    Reads available png files under: assets/images/<brand_folder>/*.png
+    Returns list like ['320i','z4','x1'] (filename stems).
+    """
+    folder = Path("assets") / "images" / brand_folder
+    if not folder.exists():
+        return []
+    return sorted([p.stem for p in folder.glob("*.png")])
+
+
+# ---------- Sidebar: brand + available codes ----------
+st.sidebar.header("Görsel Ayarları")
+brand_folder = st.sidebar.selectbox("Marka klasörü", ["bmw", "mercedes"], index=0)
+
+available_codes = list_image_codes(brand_folder)
+if not available_codes:
+    st.sidebar.warning(f"assets/images/{brand_folder} içinde PNG bulunamadı. (Örn: 320i.png)")
+
+
 # ---------- Input section ----------
 st.subheader("1) Veri Girişi")
 
 tab1, tab2 = st.tabs(["Manuel giriş", "CSV yükle"])
 
+df_in = None  # net state
+
 with tab1:
-    st.caption("Her satır bir araç. Fiyat: Liste fiyatı. İndirim opsiyonel (%). GP opsiyonel. X_pos: grafikte yatay konum (0,1) arası, Öneri: Sol kolon: 0.18, Orta kolon: 0.50, Sağ kolon: 0.82.")
+    st.caption(
+        "Her satır bir araç. Fiyat: Liste fiyatı. İndirim opsiyonel (%). GP opsiyonel. "
+        "X_pos: grafikte yatay konum (0–1). Resim Kodu: listeden seç."
+    )
     default_rows = 8
+
     df_manual = pd.DataFrame({
-        "model": ["BMW X1 xDrive25e – M Sport"] + [""]*(default_rows-1),
-        "price_list": ["4.927.695 ₺"] + [""]*(default_rows-1),
-        "discount_pct": ["6%"] + [""]*(default_rows-1),
-        "gross_profit": [""] + [""]*(default_rows-1),
-        "note": [""] + [""]*(default_rows-1),
-        "x_pos": ["1"] + [""]*(default_rows-1),  # ✅ yeni kolon
+        "model": ["BMW X1 xDrive25e – M Sport"] + [""] * (default_rows - 1),
+        "price_list": ["4.927.695 ₺"] + [""] * (default_rows - 1),
+        "discount_pct": ["6%"] + [""] * (default_rows - 1),
+        "gross_profit": [""] + [""] * (default_rows - 1),
+        "note": [""] + [""] * (default_rows - 1),
+        "x_pos": ["0.50"] + [""] * (default_rows - 1),      # 0..1 arası
+        "img_code": [""] + [""] * (default_rows - 1),       # kullanıcı dropdown’dan seçecek
     })
 
     edited = st.data_editor(
@@ -95,21 +129,29 @@ with tab1:
             "discount_pct": st.column_config.TextColumn("İndirim (%)", help="6% veya 6 veya 0.06"),
             "gross_profit": st.column_config.TextColumn("GP (opsiyonel)", help="Örn: 4.033€ veya 4033"),
             "note": st.column_config.TextColumn("Not (opsiyonel)"),
+
             "x_pos": st.column_config.TextColumn(
-                "X (Yatay Konum (0,1))",
-                help="Ondalıklı girebilirsin: Virgül kabul, boş bırakılırsa otomatik.",
+                "X (0–1)",
+                help="0=sol, 0.5=orta, 1=sağ. Ondalıklı girebilirsin (virgül kabul). Boş bırakılırsa otomatik."
+            ),
+
+            # ✅ burada: kullanıcı kod yazmıyor, listeden seçiyor
+            "img_code": st.column_config.SelectboxColumn(
+                "Resim Kodu (png)",
+                help=f"assets/images/{brand_folder}/ içindeki PNG adından seç (ör: 320i). Seçilmezse nokta gösterilir.",
+                options=[""] + available_codes,
             ),
         },
     )
     df_in = edited.copy()
 
-
 with tab2:
-    st.caption("CSV kolonları: model, price_list, discount_pct, gross_profit, note")
+    st.caption("CSV kolonları: model, price_list, discount_pct, gross_profit, note, x_pos, img_code")
     up = st.file_uploader("CSV yükle", type=["csv"])
     if up is not None:
         df_csv = pd.read_csv(up)
         df_in = df_csv.copy()
+
 
 # ---------- Process ----------
 st.subheader("2) Grafik Ayarları")
@@ -118,12 +160,16 @@ if df_in is None:
     st.info("Manuel giriş sekmesinden veri gir veya CSV yükle.")
     st.stop()
 
-# Clean + compute
 df = df_in.copy()
-if "model" not in df.columns or "price_list" not in df.columns:
-    st.error("Veride en az 'model' ve 'price_list' kolonları olmalı.")
+
+# Required columns
+required_cols = {"model", "price_list"}
+missing_cols = required_cols - set(df.columns)
+if missing_cols:
+    st.error(f"Veride en az şu kolonlar olmalı: {', '.join(sorted(required_cols))}")
     st.stop()
 
+# Clean
 df["model"] = df["model"].astype(str).str.strip()
 df = df[df["model"].ne("")].copy()
 
@@ -134,20 +180,21 @@ if "discount_pct" not in df.columns:
     df["discount_pct"] = 0
 df["discount_frac"] = df["discount_pct"].apply(parse_percent)
 
-# Net price (after discount)
 df["price_net_num"] = df["price_list_num"] * (1 - df["discount_frac"])
 
-# Optional GP
 if "gross_profit" not in df.columns:
     df["gross_profit"] = ""
 df["gross_profit_str"] = df["gross_profit"].astype(str).fillna("").str.strip()
 
-# Optional note
 if "note" not in df.columns:
     df["note"] = ""
 df["note"] = df["note"].astype(str).fillna("").str.strip()
 
-# Sort by net price
+if "img_code" not in df.columns:
+    df["img_code"] = ""
+df["img_code"] = df["img_code"].astype(str).fillna("").str.strip().str.lower()
+
+# Sort by net price (still used for y-order; x is independent)
 df = df.sort_values("price_net_num").reset_index(drop=True)
 
 # Controls
@@ -158,7 +205,7 @@ currency_mode = st.radio(
 )
 y_col = "price_net_num" if currency_mode.startswith("Net") else "price_list_num"
 
-title_left = st.text_input("Sol başlık", value="Fiyat Merdiveni")
+title_left = st.text_input("Grafik Başlığı", value="Fiyat Merdiveni")
 subtitle = st.text_input("Alt başlık (opsiyonel)", value="")
 
 show_labels = st.checkbox("Etiketleri göster", value=True)
@@ -175,8 +222,7 @@ min_p = float(df[y_col].min())
 max_p = float(df[y_col].max())
 rng = max(max_p - min_p, 1.0)
 
-# x positions = ladder steps
-# X positions: user-defined (x_pos) if provided, otherwise auto 1..N
+# X positions: user-provided (0..1). Accept 0,5 or 0.5
 if "x_pos" in df.columns:
     df["x_pos_num"] = pd.to_numeric(
         df["x_pos"].astype(str).str.replace(",", ".", regex=False).str.strip(),
@@ -185,87 +231,111 @@ if "x_pos" in df.columns:
 else:
     df["x_pos_num"] = None
 
-    
-# auto-fill missing x positions with 1..N
+# Auto-fill missing x positions evenly (optional fallback)
 missing = df["x_pos_num"].isna()
 if missing.any():
-    auto_vals = list(range(1, missing.sum() + 1))
+    # spread missing points across 0..1
+    n = missing.sum()
+    auto_vals = [0.1 + (i / max(n - 1, 1)) * 0.8 for i in range(n)]  # 0.1..0.9
     df.loc[missing, "x_pos_num"] = auto_vals
 
-df["x"] = df["x_pos_num"].astype(float)
+df["x"] = df["x_pos_num"].astype(float).clip(0.0, 1.0)
 
-
-
-fig_w = max(9, min(16, 0.9 * len(df) + 6))
-fig_h = 6
-
+fig_w = 16
+fig_h = 7
 fig, ax = plt.subplots(figsize=(fig_w, fig_h))
 
-# points
-ax.scatter(df["x"], df[y_col])
-# ---- FIXED X AXIS: 0 (left) → 1 (right) ----
+# Fixed X axis 0..1
 ax.set_xlim(0, 1)
 ax.margins(x=0)
-
 ax.set_xticks([])
 
-# axis formatting
+# Title higher + bolder
 ax.set_title(
     title_left,
-    fontsize=17,        # başlık boyutu (16–20 arası iyi)
-    fontweight="bold",  # kalın
-    pad=25              # başlığı yukarı iter
+    fontsize=18,
+    fontweight="bold",
+    pad=32
 )
+if subtitle:
+    ax.text(
+        0.5, 1.02,
+        subtitle,
+        transform=ax.transAxes,
+        ha="center",
+        va="bottom",
+        fontsize=11,
+        color="#555555"
+    )
+
 ax.set_xlabel("")
 ax.set_ylabel("Fiyat (₺)")
 
-# Format y tick labels with Turkish thousands dots
-yticks = ax.get_yticks()
-ax.set_yticklabels([format_try(v) for v in yticks])
+# Give labels breathing room on Y
+ax.set_ylim(min_p - rng * 0.05, max_p + rng * 0.18)
 
-# Remove x ticks (we label points)
-ax.set_xticks([])
+# Y tick formatting (safe way)
+import matplotlib.ticker as mticker
+ax.yaxis.set_major_formatter(mticker.FuncFormatter(lambda v, pos: format_try(v)))
+
+# --- Draw images if selected; otherwise draw a small dot ---
+for i in range(len(df)):
+    x = float(df.loc[i, "x"])
+    y = float(df.loc[i, y_col])
+    code = str(df.loc[i, "img_code"]).strip().lower()
+
+    img_path = Path("assets") / "images" / brand_folder / f"{code}.png"
+
+    if code and img_path.exists():
+        im = Image.open(img_path).convert("RGBA")
+        imagebox = OffsetImage(im, zoom=0.22)  # adjust 0.18–0.30 as needed
+        ab = AnnotationBbox(
+            imagebox,
+            (x, y),
+            xybox=(0, 24),   # move image upward from the point
+            xycoords="data",
+            boxcoords="offset points",
+            frameon=False
+        )
+        ax.add_artist(ab)
+    else:
+        ax.scatter([x], [y], s=30)
 
 # Labels (2-line: model in bold blue, details smaller underneath)
 if show_labels:
     for i in range(len(df)):
-        x = df.loc[i, "x"]
-        y = df.loc[i, y_col]
+        x = float(df.loc[i, "x"])
+        y = float(df.loc[i, y_col])
 
         model = df.loc[i, "model"]
-
-        # What to show as "price" (net or list depending on selection)
         price_show = df.loc[i, y_col]
 
         discount = df.loc[i, "discount_frac"]
         gp = df.loc[i, "gross_profit_str"]
         note = df.loc[i, "note"]
 
-        # --- Line 1: model (blue + bold)
+        # Line 1: model (blue + bold) -> under image
         ax.annotate(
             model,
             (x, y),
             textcoords="offset points",
-            xytext=(0, 13),
+            xytext=(0, -16),
             ha="center",
-            va="bottom",
+            va="top",
             fontsize=10,
             fontweight="bold",
-            color="#1f77b4",  # nice blue (BMW-like)
+            color="#1f77b4",
         )
 
-        # --- Line 2: details (smaller)
+        # Line 2: details (smaller)
         details_parts = [format_try(price_show)]
 
-        # discount in parentheses
         if discount and discount > 0:
             details_parts.append(f"({discount*100:.0f}% indirim)")
 
-        # GP
-        if gp and gp.lower() not in {"nan", "none", ""}:
+        if label_mode.endswith("+ GP") and gp and gp.lower() not in {"nan", "none", ""}:
             details_parts.append(f"GP: {gp}")
 
-        # optional note (you can comment this out if you don't want it)
         if note:
             details_parts.append(note)
 
@@ -275,35 +345,36 @@ if show_labels:
             details,
             (x, y),
             textcoords="offset points",
-            xytext=(0, 2),
+            xytext=(0, -30),
             ha="center",
-            va="bottom",
+            va="top",
             fontsize=8,
             color="#333333",
         )
 
-# Give labels some breathing room
-pad = 0.12  # increase if needed (0.15)
-ax.set_ylim(min_p - rng * 0.05, max_p + rng * pad)
+ax.grid(True, axis="y", linestyle="--", alpha=0.25)
 
-# Make plotting area larger inside the figure
-fig.subplots_adjust(left=0.07, right=0.98, top=0.90, bottom=0.08)
-ax.grid(True, axis="y", linestyle="--", alpha=0.3)
 fig.tight_layout()
 st.pyplot(fig, use_container_width=True)
 
 # Table view
 with st.expander("Veri tablosu"):
-    out = df[["model", "price_list_num", "discount_frac", "price_net_num", "gross_profit_str", "note"]].copy()
+    out_cols = ["model", "price_list_num", "discount_frac", "price_net_num", "gross_profit_str", "note", "x", "img_code"]
+    out = df[out_cols].copy()
+
     out["price_list_num"] = out["price_list_num"].apply(format_try)
     out["price_net_num"] = out["price_net_num"].apply(format_try)
     out["discount_frac"] = out["discount_frac"].apply(lambda x: f"{x*100:.0f}%" if x else "")
+    out["x"] = out["x"].apply(lambda v: f"{v:.2f}")
+
     out = out.rename(columns={
         "price_list_num": "Liste Fiyatı",
         "price_net_num": "Net Fiyat",
         "discount_frac": "İndirim",
         "gross_profit_str": "GP",
         "note": "Not",
+        "x": "X (0–1)",
+        "img_code": "Resim Kodu",
     })
-    st.dataframe(out, use_container_width=True)
 
+    st.dataframe(out, use_container_width=True)
