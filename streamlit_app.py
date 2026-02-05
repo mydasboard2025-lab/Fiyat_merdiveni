@@ -4,9 +4,9 @@ from pathlib import Path
 import pandas as pd
 import streamlit as st
 import matplotlib.pyplot as plt
-
 from PIL import Image
 from matplotlib.offsetbox import OffsetImage, AnnotationBbox
+import matplotlib.ticker as mticker
 
 
 st.set_page_config(page_title="Fiyat Merdiveni", layout="wide")
@@ -32,7 +32,6 @@ def parse_money(x):
     if not s or s.lower() in {"nan", "none"}:
         return None
 
-    # keep digits only
     digits = re.sub(r"[^\d]", "", s)
     if digits == "":
         return None
@@ -60,7 +59,6 @@ def parse_percent(x):
             return 0.0
     try:
         v = float(s)
-        # if user typed 6, interpret as 6%
         if v > 1.0:
             return v / 100.0
         return v
@@ -88,7 +86,7 @@ def list_image_codes(brand_folder: str) -> list[str]:
 
 # ---------- Sidebar: brand + available codes ----------
 st.sidebar.header("Görsel Ayarları")
-brand_folder = st.sidebar.selectbox("Marka klasörü", ["bmw", "mercedes"], index=0)
+brand_folder = st.sidebar.selectbox("Marka", ["bmw", "mercedes"], index=0)
 
 available_codes = list_image_codes(brand_folder)
 if not available_codes:
@@ -99,24 +97,23 @@ if not available_codes:
 st.subheader("1) Veri Girişi")
 
 tab1, tab2 = st.tabs(["Manuel giriş", "CSV yükle"])
-
-df_in = None  # net state
+df_in = None
 
 with tab1:
     st.caption(
         "Her satır bir araç. Fiyat: Liste fiyatı. İndirim opsiyonel (%). GP opsiyonel. "
-        "X_pos: grafikte yatay konum (0–1). Resim Kodu: listeden seç."
+        "X: 0–1 (0=sol, 0.5=orta, 1=sağ). Resim Kodu: listeden seç."
     )
-    default_rows = 8
 
+    default_rows = 8
     df_manual = pd.DataFrame({
         "model": ["BMW X1 xDrive25e – M Sport"] + [""] * (default_rows - 1),
         "price_list": ["4.927.695 ₺"] + [""] * (default_rows - 1),
         "discount_pct": ["6%"] + [""] * (default_rows - 1),
         "gross_profit": [""] + [""] * (default_rows - 1),
         "note": [""] + [""] * (default_rows - 1),
-        "x_pos": ["0.50"] + [""] * (default_rows - 1),      # 0..1 arası
-        "img_code": [""] + [""] * (default_rows - 1),       # kullanıcı dropdown’dan seçecek
+        "x_pos": ["0.50"] + [""] * (default_rows - 1),
+        "img_code": [""] + [""] * (default_rows - 1),
     })
 
     edited = st.data_editor(
@@ -135,7 +132,6 @@ with tab1:
                 help="0=sol, 0.5=orta, 1=sağ. Ondalıklı girebilirsin (virgül kabul). Boş bırakılırsa otomatik."
             ),
 
-            # ✅ burada: kullanıcı kod yazmıyor, listeden seçiyor
             "img_code": st.column_config.SelectboxColumn(
                 "Resim Kodu (png)",
                 help=f"assets/images/{brand_folder}/ içindeki PNG adından seç (ör: 320i). Seçilmezse nokta gösterilir.",
@@ -162,14 +158,12 @@ if df_in is None:
 
 df = df_in.copy()
 
-# Required columns
 required_cols = {"model", "price_list"}
 missing_cols = required_cols - set(df.columns)
 if missing_cols:
     st.error(f"Veride en az şu kolonlar olmalı: {', '.join(sorted(required_cols))}")
     st.stop()
 
-# Clean
 df["model"] = df["model"].astype(str).str.strip()
 df = df[df["model"].ne("")].copy()
 
@@ -194,10 +188,9 @@ if "img_code" not in df.columns:
     df["img_code"] = ""
 df["img_code"] = df["img_code"].astype(str).fillna("").str.strip().str.lower()
 
-# Sort by net price (still used for y-order; x is independent)
+# Sort by net price (y-order). x is independent.
 df = df.sort_values("price_net_num").reset_index(drop=True)
 
-# Controls
 currency_mode = st.radio(
     "Sıralama hangi fiyatla olsun?",
     ["Net fiyat (indirim sonrası)", "Liste fiyatı"],
@@ -209,7 +202,10 @@ title_left = st.text_input("Grafik Başlığı", value="Fiyat Merdiveni")
 subtitle = st.text_input("Alt başlık (opsiyonel)", value="")
 
 show_labels = st.checkbox("Etiketleri göster", value=True)
-label_mode = st.selectbox("Etiket içeriği", ["Model + Fiyat", "Model + Fiyat + İndirim", "Model + Fiyat + İndirim + GP"])
+label_mode = st.selectbox(
+    "Etiket içeriği",
+    ["Model + Fiyat", "Model + Fiyat + İndirim", "Model + Fiyat + İndirim + GP"]
+)
 
 # ---------- Plot ----------
 st.subheader("3) Fiyat Merdiveni")
@@ -231,19 +227,16 @@ if "x_pos" in df.columns:
 else:
     df["x_pos_num"] = None
 
-# Auto-fill missing x positions evenly (optional fallback)
+# Auto-fill missing x positions across 0..1 (fallback)
 missing = df["x_pos_num"].isna()
 if missing.any():
-    # spread missing points across 0..1
     n = missing.sum()
     auto_vals = [0.1 + (i / max(n - 1, 1)) * 0.8 for i in range(n)]  # 0.1..0.9
     df.loc[missing, "x_pos_num"] = auto_vals
 
 df["x"] = df["x_pos_num"].astype(float).clip(0.0, 1.0)
 
-fig_w = 16
-fig_h = 7
-fig, ax = plt.subplots(figsize=(fig_w, fig_h))
+fig, ax = plt.subplots(figsize=(16, 7))
 
 # Fixed X axis 0..1
 ax.set_xlim(0, 1)
@@ -251,12 +244,7 @@ ax.margins(x=0)
 ax.set_xticks([])
 
 # Title higher + bolder
-ax.set_title(
-    title_left,
-    fontsize=18,
-    fontweight="bold",
-    pad=32
-)
+ax.set_title(title_left, fontsize=18, fontweight="bold", pad=32)
 if subtitle:
     ax.text(
         0.5, 1.02,
@@ -271,14 +259,13 @@ if subtitle:
 ax.set_xlabel("")
 ax.set_ylabel("Fiyat (₺)")
 
-# Give labels breathing room on Y
+# Give top room for images/labels
 ax.set_ylim(min_p - rng * 0.05, max_p + rng * 0.18)
 
-# Y tick formatting (safe way)
-import matplotlib.ticker as mticker
+# Y tick formatter
 ax.yaxis.set_major_formatter(mticker.FuncFormatter(lambda v, pos: format_try(v)))
 
-# --- Draw images if selected; otherwise draw a small dot ---
+# Draw images if code exists, else draw a dot
 for i in range(len(df)):
     x = float(df.loc[i, "x"])
     y = float(df.loc[i, y_col])
@@ -288,11 +275,11 @@ for i in range(len(df)):
 
     if code and img_path.exists():
         im = Image.open(img_path).convert("RGBA")
-        imagebox = OffsetImage(im, zoom=0.22)  # adjust 0.18–0.30 as needed
+        imagebox = OffsetImage(im, zoom=0.22)  # tweak 0.18–0.30
         ab = AnnotationBbox(
             imagebox,
             (x, y),
-            xybox=(0, 24),   # move image upward from the point
+            xybox=(0, 24),
             xycoords="data",
             boxcoords="offset points",
             frameon=False
@@ -301,7 +288,7 @@ for i in range(len(df)):
     else:
         ax.scatter([x], [y], s=30)
 
-# Labels (2-line: model in bold blue, details smaller underneath)
+# Labels under the image
 if show_labels:
     for i in range(len(df)):
         x = float(df.loc[i, "x"])
@@ -309,12 +296,11 @@ if show_labels:
 
         model = df.loc[i, "model"]
         price_show = df.loc[i, y_col]
-
         discount = df.loc[i, "discount_frac"]
         gp = df.loc[i, "gross_profit_str"]
         note = df.loc[i, "note"]
 
-        # Line 1: model (blue + bold) -> under image
+        # Model (blue + bold)
         ax.annotate(
             model,
             (x, y),
@@ -327,15 +313,13 @@ if show_labels:
             color="#1f77b4",
         )
 
-        # Line 2: details (smaller)
+        # Details
         details_parts = [format_try(price_show)]
-
-        if discount and discount > 0:
-            details_parts.append(f"({discount*100:.0f}% indirim)")
-
+        if label_mode.endswith("İndirim") or "İndirim + GP" in label_mode:
+            if discount and discount > 0:
+                details_parts.append(f"({discount*100:.0f}% indirim)")
         if label_mode.endswith("+ GP") and gp and gp.lower() not in {"nan", "none", ""}:
             details_parts.append(f"GP: {gp}")
-
         if note:
             details_parts.append(note)
 
@@ -357,7 +341,6 @@ ax.grid(True, axis="y", linestyle="--", alpha=0.25)
 fig.tight_layout()
 st.pyplot(fig, use_container_width=True)
 
-# Table view
 with st.expander("Veri tablosu"):
     out_cols = ["model", "price_list_num", "discount_frac", "price_net_num", "gross_profit_str", "note", "x", "img_code"]
     out = df[out_cols].copy()
