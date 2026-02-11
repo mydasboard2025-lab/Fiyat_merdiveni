@@ -279,7 +279,7 @@ ax.set_ylim(min_p - rng * 0.18, max_p + rng * 0.30)
 ax.yaxis.set_major_formatter(mticker.FuncFormatter(lambda v, pos: format_try(v)))
 
 # TARGET width for all images (px) — same for all images
-TARGET_W = 300
+TARGET_W = 350
 
 # Draw images if selected; otherwise draw a dot
 for i in range(len(df)):
