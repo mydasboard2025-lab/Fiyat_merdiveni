@@ -73,24 +73,33 @@ def list_all_image_options(brands: list[str]) -> list[str]:
     return out
 
 
-def trim_transparent(im: Image.Image, alpha_threshold: int = 5) -> Image.Image:
+def trim_transparent(im: Image.Image, alpha_threshold: int = 35, pad: int = 2) -> Image.Image:
     """
-    PNG içindeki şeffaf boşlukları (padding) kırpar.
-    Bu genelde araçların farklı büyük görünmesini ve bulanıklığı azaltır.
+    PNG içindeki şeffaf boşlukları kırpar.
+    alpha_threshold yükseltilince kenar pürüzleri azalır.
+    pad ile 1-2px güvenlik payı bırakılır (tırtığı engeller).
     """
     if im.mode != "RGBA":
         im = im.convert("RGBA")
 
     arr = np.array(im)
     alpha = arr[:, :, 3]
-    ys, xs = np.where(alpha > alpha_threshold)
 
+    ys, xs = np.where(alpha > alpha_threshold)
     if len(xs) == 0 or len(ys) == 0:
         return im
 
     x0, x1 = xs.min(), xs.max()
     y0, y1 = ys.min(), ys.max()
+
+    # pad ekle (sınırları aşma)
+    x0 = max(0, x0 - pad)
+    y0 = max(0, y0 - pad)
+    x1 = min(arr.shape[1] - 1, x1 + pad)
+    y1 = min(arr.shape[0] - 1, y1 + pad)
+
     return im.crop((x0, y0, x1 + 1, y1 + 1))
+
 
 
 BRANDS = ["bmw", "mercedes"]
@@ -293,7 +302,7 @@ for i in range(len(df)):
 
     if img_path is not None and img_path.exists():
         im = Image.open(img_path).convert("RGBA")
-        im = trim_transparent(im)  # remove transparent padding
+        im = trim_transparent(im, alpha_threshold=40, pad=3)  # remove transparent padding
 
         zoom = TARGET_W / max(im.size[0], 1)
 
