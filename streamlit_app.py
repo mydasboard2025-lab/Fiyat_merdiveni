@@ -273,7 +273,7 @@ ax.set_xlabel("")
 ax.set_ylabel("Fiyat (₺)")
 
 # Give top room for images/labels
-ax.set_ylim(min_p - rng * 0.05, max_p + rng * 0.18)
+ax.set_ylim(min_p - rng * 0.12, max_p + rng * 0.28)
 
 # Y tick formatter
 ax.yaxis.set_major_formatter(mticker.FuncFormatter(lambda v, pos: format_try(v)))
@@ -302,7 +302,7 @@ for i in range(len(df)):
         ab = AnnotationBbox(
             imagebox,
             (x, y),
-            xybox=(0, 24),
+            xybox=(0, 34),
             xycoords="data",
             boxcoords="offset points",
             frameon=False
@@ -328,7 +328,7 @@ if show_labels:
             model,
             (x, y),
             textcoords="offset points",
-            xytext=(0, -16),
+            xytext=(0, -26),
             ha="center",
             va="top",
             fontsize=10,
@@ -351,7 +351,7 @@ if show_labels:
             details,
             (x, y),
             textcoords="offset points",
-            xytext=(0, -30),
+            xytext=(0, -40),
             ha="center",
             va="top",
             fontsize=8,
