@@ -1,6 +1,7 @@
 import re
 from pathlib import Path
 
+import numpy as np
 import pandas as pd
 import streamlit as st
 import matplotlib.pyplot as plt
@@ -14,28 +15,7 @@ st.title("Fiyat Merdiveni")
 
 
 # ---------- Helpers ----------
-def trim_transparent(im: Image.Image, alpha_threshold: int = 5) -> Image.Image:
-    """PNG içindeki şeffaf boşlukları kırpar (padding yüzünden küçük görünmeyi engeller)."""
-    if im.mode != "RGBA":
-        im = im.convert("RGBA")
-    arr = np.array(im)
-    alpha = arr[:, :, 3]
-    ys, xs = np.where(alpha > alpha_threshold)
-    if len(xs) == 0 or len(ys) == 0:
-        return im
-    x0, x1 = xs.min(), xs.max()
-    y0, y1 = ys.min(), ys.max()
-    return im.crop((x0, y0, x1 + 1, y1 + 1))
-    
 def parse_money(x):
-    """
-    Accepts values like:
-      4.927.695 ₺
-      4,927,695
-      4927695
-      4.927.695
-    Returns float or None.
-    """
     if x is None:
         return None
     if isinstance(x, (int, float)) and pd.notna(x):
@@ -52,13 +32,6 @@ def parse_money(x):
 
 
 def parse_percent(x):
-    """
-    Accepts:
-      6%
-      0.06
-      6
-    Returns fraction (0.06) or 0.0 if empty.
-    """
     if x is None or (isinstance(x, float) and pd.isna(x)):
         return 0.0
     s = str(x).strip()
@@ -100,18 +73,24 @@ def list_all_image_options(brands: list[str]) -> list[str]:
     return out
 
 
-def resize_to_width(im: Image.Image, target_w: int) -> Image.Image:
-    w, h = im.size
-    if w == 0 or target_w <= 0:
+def trim_transparent(im: Image.Image, alpha_threshold: int = 5) -> Image.Image:
+    """
+    PNG içindeki şeffaf boşlukları (padding) kırpar.
+    Bu genelde araçların farklı büyük görünmesini ve bulanıklığı azaltır.
+    """
+    if im.mode != "RGBA":
+        im = im.convert("RGBA")
+
+    arr = np.array(im)
+    alpha = arr[:, :, 3]
+    ys, xs = np.where(alpha > alpha_threshold)
+
+    if len(xs) == 0 or len(ys) == 0:
         return im
-    scale = target_w / float(w)
-    new_w = max(1, int(w * scale))
-    new_h = max(1, int(h * scale))
 
-    im2 = im.copy()
-    im2.thumbnail((new_w, new_h), Image.Resampling.LANCZOS)
-    return im2
-
+    x0, x1 = xs.min(), xs.max()
+    y0, y1 = ys.min(), ys.max()
+    return im.crop((x0, y0, x1 + 1, y1 + 1))
 
 
 BRANDS = ["bmw", "mercedes"]
@@ -138,7 +117,7 @@ with tab1:
         "gross_profit": [""] + [""] * (default_rows - 1),
         "note": [""] + [""] * (default_rows - 1),
         "x_pos": ["0.50"] + [""] * (default_rows - 1),
-        "img_code": [""] + [""] * (default_rows - 1),  # now stores "bmw/320i" etc.
+        "img_code": [""] + [""] * (default_rows - 1),  # "bmw/320i" etc
     })
 
     edited = st.data_editor(
@@ -151,12 +130,10 @@ with tab1:
             "discount_pct": st.column_config.TextColumn("İndirim (%)", help="6% veya 6 veya 0.06"),
             "gross_profit": st.column_config.TextColumn("GP (opsiyonel)", help="Örn: 4.033€ veya 4033"),
             "note": st.column_config.TextColumn("Not (opsiyonel)"),
-
             "x_pos": st.column_config.TextColumn(
                 "X (0–1)",
                 help="0=sol, 0.5=orta, 1=sağ. Ondalıklı girebilirsin (virgül kabul). Boş bırakılırsa otomatik."
             ),
-
             "img_code": st.column_config.SelectboxColumn(
                 "Resim (Marka/Model)",
                 help="Örn: bmw/320i veya mercedes/c200. Seçilmezse nokta gösterilir.",
@@ -214,7 +191,7 @@ if "img_code" not in df.columns:
     df["img_code"] = ""
 df["img_code"] = df["img_code"].astype(str).fillna("").str.strip().str.lower()
 
-# Sort by net price (y-order). x is independent.
+# Sort by net price (y-order). x independent.
 df = df.sort_values("price_net_num").reset_index(drop=True)
 
 currency_mode = st.radio(
@@ -244,7 +221,7 @@ min_p = float(df[y_col].min())
 max_p = float(df[y_col].max())
 rng = max(max_p - min_p, 1.0)
 
-# X positions: user-provided (0..1). Accept 0,5 or 0.5
+# X positions: user-provided 0..1, accept 0,5 or 0.5
 if "x_pos" in df.columns:
     df["x_pos_num"] = pd.to_numeric(
         df["x_pos"].astype(str).str.replace(",", ".", regex=False).str.strip(),
@@ -253,7 +230,7 @@ if "x_pos" in df.columns:
 else:
     df["x_pos_num"] = None
 
-# Auto-fill missing x positions across 0..1 (fallback)
+# Auto-fill missing x positions across 0..1
 missing = df["x_pos_num"].isna()
 if missing.any():
     n = missing.sum()
@@ -262,15 +239,14 @@ if missing.any():
 
 df["x"] = df["x_pos_num"].astype(float).clip(0.0, 1.0)
 
-fig, ax = plt.subplots(figsize=(16, 7), dpi = 300)
+# Higher DPI for sharper render
+fig, ax = plt.subplots(figsize=(16, 7), dpi=300)
 
-# Fixed X axis 0..1
 ax.set_xlim(0, 1)
 ax.margins(x=0)
 ax.set_xticks([])
 
-# Title higher + bolder
-ax.set_title(title_left, fontsize=18, fontweight="bold", pad=32)
+ax.set_title(title_left, fontsize=18, fontweight="bold", pad=34)
 if subtitle:
     ax.text(
         0.5, 1.02,
@@ -285,35 +261,42 @@ if subtitle:
 ax.set_xlabel("")
 ax.set_ylabel("Fiyat (₺)")
 
-# Give top room for images/labels
-ax.set_ylim(min_p - rng * 0.18, max_p + rng * 0.30)
+# More top/bottom margin so images/labels won't overflow
+ax.set_ylim(min_p - rng * 0.12, max_p + rng * 0.28)
 
-# Y tick formatter
 ax.yaxis.set_major_formatter(mticker.FuncFormatter(lambda v, pos: format_try(v)))
 
-# TARGET width for all images (px) — same for all images
-TARGET_W = 320
+# Image placement spacing
+IMG_OFFSET_Y = 38  # image up
+MODEL_OFFSET_Y = -26  # model text down
+DETAIL_OFFSET_Y = -44  # detail text further down
 
-# Draw images if selected; otherwise draw a dot
+# Target display width for images (in pixels, approx)
+TARGET_W = 420
+
 for i in range(len(df)):
     x = float(df.loc[i, "x"])
     y = float(df.loc[i, y_col])
 
-    sel = str(df.loc[i, "img_code"]).strip().lower()  # expects "bmw/320i"
+    sel = str(df.loc[i, "img_code"]).strip().lower()  # "bmw/320i"
     img_path = None
     if sel and "/" in sel:
         b, c = sel.split("/", 1)
-        img_path = Path("assets") / "images" / b / f"{c}.png"
+
+        # allow underscore/space mismatch
+        c_norm = c.strip().lower().replace(" ", "_")
+        img_path = Path("assets") / "images" / b / f"{c_norm}.png"
+        if not img_path.exists():
+            img_path2 = Path("assets") / "images" / b / f"{c}.png"
+            if img_path2.exists():
+                img_path = img_path2
 
     if img_path is not None and img_path.exists():
         im = Image.open(img_path).convert("RGBA")
-        im = trim_transparent(im)  # padding kırp
-        
-        TARGET_W = 420  # daha keskin görünür (320-520 deneyebilirsin)
+        im = trim_transparent(im)  # remove transparent padding
+
         zoom = TARGET_W / max(im.size[0], 1)
 
-
-        imagebox = OffsetImage(im, zoom=1.0)  # draw the resized image as-is
         arr = np.array(im)
         imagebox = OffsetImage(
             arr,
@@ -324,7 +307,7 @@ for i in range(len(df)):
         ab = AnnotationBbox(
             imagebox,
             (x, y),
-            xybox=(0, 34),
+            xybox=(0, IMG_OFFSET_Y),
             xycoords="data",
             boxcoords="offset points",
             frameon=False
@@ -333,7 +316,7 @@ for i in range(len(df)):
     else:
         ax.scatter([x], [y], s=30)
 
-# Labels under the image
+# Labels
 if show_labels:
     for i in range(len(df)):
         x = float(df.loc[i, "x"])
@@ -345,12 +328,11 @@ if show_labels:
         gp = df.loc[i, "gross_profit_str"]
         note = df.loc[i, "note"]
 
-        # Model (blue + bold)
         ax.annotate(
             model,
             (x, y),
             textcoords="offset points",
-            xytext=(0, -23),
+            xytext=(0, MODEL_OFFSET_Y),
             ha="center",
             va="top",
             fontsize=10,
@@ -358,7 +340,6 @@ if show_labels:
             color="#1f77b4",
         )
 
-        # Details
         details_parts = [format_try(price_show)]
         if ("İndirim" in label_mode) and (discount and discount > 0):
             details_parts.append(f"({discount*100:.0f}% indirim)")
@@ -373,7 +354,7 @@ if show_labels:
             details,
             (x, y),
             textcoords="offset points",
-            xytext=(0, -37),
+            xytext=(0, DETAIL_OFFSET_Y),
             ha="center",
             va="top",
             fontsize=8,
@@ -405,4 +386,3 @@ with st.expander("Veri tablosu"):
     })
 
     st.dataframe(out, use_container_width=True)
-
