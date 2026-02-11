@@ -249,7 +249,7 @@ if missing.any():
 
 df["x"] = df["x_pos_num"].astype(float).clip(0.0, 1.0)
 
-fig, ax = plt.subplots(figsize=(16, 7))
+fig, ax = plt.subplots(figsize=(16, 7), dpi = 200)
 
 # Fixed X axis 0..1
 ax.set_xlim(0, 1)
