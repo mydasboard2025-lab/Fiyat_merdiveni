@@ -73,24 +73,22 @@ def format_try(v):
     return f"{v:,.0f} ₺".replace(",", ".")
 
 
-def list_image_codes(brand_folder: str) -> list[str]:
+def list_all_image_options(brands: list[str]) -> list[str]:
     """
-    Reads available png files under: assets/images/<brand_folder>/*.png
-    Returns list like ['320i','z4','x1'] (filename stems).
+    Returns ["", "bmw/320i", "bmw/z4", "mercedes/c200", ...]
+    Reads from assets/images/<brand>/*.png
     """
-    folder = Path("assets") / "images" / brand_folder
-    if not folder.exists():
-        return []
-    return sorted([p.stem for p in folder.glob("*.png")])
+    out = [""]
+    for b in brands:
+        folder = Path("assets") / "images" / b
+        if folder.exists():
+            codes = sorted([p.stem for p in folder.glob("*.png")])
+            out += [f"{b}/{c}" for c in codes]
+    return out
 
 
-# ---------- Sidebar: brand + available codes ----------
-st.sidebar.header("Görsel Ayarları")
-brand_folder = st.sidebar.selectbox("Marka", ["bmw", "mercedes"], index=0)
-
-available_codes = list_image_codes(brand_folder)
-if not available_codes:
-    st.sidebar.warning(f"assets/images/{brand_folder} içinde PNG bulunamadı. (Örn: 320i.png)")
+BRANDS = ["bmw", "mercedes"]
+all_img_options = list_all_image_options(BRANDS)
 
 
 # ---------- Input section ----------
@@ -102,7 +100,7 @@ df_in = None
 with tab1:
     st.caption(
         "Her satır bir araç. Fiyat: Liste fiyatı. İndirim opsiyonel (%). GP opsiyonel. "
-        "X: 0–1 (0=sol, 0.5=orta, 1=sağ). Resim Kodu: listeden seç."
+        "X: 0–1 (0=sol, 0.5=orta, 1=sağ). Resim: tek dropdown’dan bmw/xxx veya mercedes/xxx seç."
     )
 
     default_rows = 8
@@ -113,7 +111,7 @@ with tab1:
         "gross_profit": [""] + [""] * (default_rows - 1),
         "note": [""] + [""] * (default_rows - 1),
         "x_pos": ["0.50"] + [""] * (default_rows - 1),
-        "img_code": [""] + [""] * (default_rows - 1),
+        "img_code": [""] + [""] * (default_rows - 1),  # now stores "bmw/320i" etc.
     })
 
     edited = st.data_editor(
@@ -133,9 +131,9 @@ with tab1:
             ),
 
             "img_code": st.column_config.SelectboxColumn(
-                "Resim Kodu (png)",
-                help=f"assets/images/{brand_folder}/ içindeki PNG adından seç (ör: 320i). Seçilmezse nokta gösterilir.",
-                options=[""] + available_codes,
+                "Resim (Marka/Model)",
+                help="Örn: bmw/320i veya mercedes/c200. Seçilmezse nokta gösterilir.",
+                options=all_img_options,
             ),
         },
     )
@@ -143,6 +141,7 @@ with tab1:
 
 with tab2:
     st.caption("CSV kolonları: model, price_list, discount_pct, gross_profit, note, x_pos, img_code")
+    st.caption("Not: img_code artık 'bmw/320i' gibi olmalı.")
     up = st.file_uploader("CSV yükle", type=["csv"])
     if up is not None:
         df_csv = pd.read_csv(up)
@@ -265,15 +264,18 @@ ax.set_ylim(min_p - rng * 0.05, max_p + rng * 0.18)
 # Y tick formatter
 ax.yaxis.set_major_formatter(mticker.FuncFormatter(lambda v, pos: format_try(v)))
 
-# Draw images if code exists, else draw a dot
+# Draw images if selected; otherwise draw a dot
 for i in range(len(df)):
     x = float(df.loc[i, "x"])
     y = float(df.loc[i, y_col])
-    code = str(df.loc[i, "img_code"]).strip().lower()
 
-    img_path = Path("assets") / "images" / brand_folder / f"{code}.png"
+    sel = str(df.loc[i, "img_code"]).strip().lower()  # expects "bmw/320i"
+    img_path = None
+    if sel and "/" in sel:
+        b, c = sel.split("/", 1)
+        img_path = Path("assets") / "images" / b / f"{c}.png"
 
-    if code and img_path.exists():
+    if img_path is not None and img_path.exists():
         im = Image.open(img_path).convert("RGBA")
         imagebox = OffsetImage(im, zoom=0.22)  # tweak 0.18–0.30
         ab = AnnotationBbox(
@@ -315,9 +317,8 @@ if show_labels:
 
         # Details
         details_parts = [format_try(price_show)]
-        if label_mode.endswith("İndirim") or "İndirim + GP" in label_mode:
-            if discount and discount > 0:
-                details_parts.append(f"({discount*100:.0f}% indirim)")
+        if ("İndirim" in label_mode) and (discount and discount > 0):
+            details_parts.append(f"({discount*100:.0f}% indirim)")
         if label_mode.endswith("+ GP") and gp and gp.lower() not in {"nan", "none", ""}:
             details_parts.append(f"GP: {gp}")
         if note:
@@ -357,7 +358,7 @@ with st.expander("Veri tablosu"):
         "gross_profit_str": "GP",
         "note": "Not",
         "x": "X (0–1)",
-        "img_code": "Resim Kodu",
+        "img_code": "Resim",
     })
 
     st.dataframe(out, use_container_width=True)
