@@ -87,6 +87,20 @@ def list_all_image_options(brands: list[str]) -> list[str]:
     return out
 
 
+def resize_to_width(im: Image.Image, target_w: int) -> Image.Image:
+    """
+    Resize PIL image to target width while keeping aspect ratio.
+    Uses LANCZOS for good quality.
+    """
+    w, h = im.size
+    if w == 0 or target_w <= 0:
+        return im
+    scale = target_w / float(w)
+    new_w = max(1, int(w * scale))
+    new_h = max(1, int(h * scale))
+    return im.resize((new_w, new_h), Image.LANCZOS)
+
+
 BRANDS = ["bmw", "mercedes"]
 all_img_options = list_all_image_options(BRANDS)
 
@@ -264,6 +278,9 @@ ax.set_ylim(min_p - rng * 0.05, max_p + rng * 0.18)
 # Y tick formatter
 ax.yaxis.set_major_formatter(mticker.FuncFormatter(lambda v, pos: format_try(v)))
 
+# TARGET width for all images (px) — same for all images
+TARGET_W = 260
+
 # Draw images if selected; otherwise draw a dot
 for i in range(len(df)):
     x = float(df.loc[i, "x"])
@@ -277,7 +294,11 @@ for i in range(len(df)):
 
     if img_path is not None and img_path.exists():
         im = Image.open(img_path).convert("RGBA")
-        imagebox = OffsetImage(im, zoom=0.22)  # tweak 0.18–0.30
+
+        # normalize width
+        im = resize_to_width(im, TARGET_W)
+
+        imagebox = OffsetImage(im, zoom=1.0)  # draw the resized image as-is
         ab = AnnotationBbox(
             imagebox,
             (x, y),
@@ -362,3 +383,4 @@ with st.expander("Veri tablosu"):
     })
 
     st.dataframe(out, use_container_width=True)
+
