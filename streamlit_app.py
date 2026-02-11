@@ -273,7 +273,7 @@ ax.set_xlabel("")
 ax.set_ylabel("Fiyat (₺)")
 
 # Give top room for images/labels
-ax.set_ylim(min_p - rng * 0.14, max_p + rng * 0.28)
+ax.set_ylim(min_p - rng * 0.18, max_p + rng * 0.30)
 
 # Y tick formatter
 ax.yaxis.set_major_formatter(mticker.FuncFormatter(lambda v, pos: format_try(v)))
