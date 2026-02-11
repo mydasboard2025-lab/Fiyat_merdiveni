@@ -14,6 +14,19 @@ st.title("Fiyat Merdiveni")
 
 
 # ---------- Helpers ----------
+def trim_transparent(im: Image.Image, alpha_threshold: int = 5) -> Image.Image:
+    """PNG içindeki şeffaf boşlukları kırpar (padding yüzünden küçük görünmeyi engeller)."""
+    if im.mode != "RGBA":
+        im = im.convert("RGBA")
+    arr = np.array(im)
+    alpha = arr[:, :, 3]
+    ys, xs = np.where(alpha > alpha_threshold)
+    if len(xs) == 0 or len(ys) == 0:
+        return im
+    x0, x1 = xs.min(), xs.max()
+    y0, y1 = ys.min(), ys.max()
+    return im.crop((x0, y0, x1 + 1, y1 + 1))
+    
 def parse_money(x):
     """
     Accepts values like:
@@ -249,7 +262,7 @@ if missing.any():
 
 df["x"] = df["x_pos_num"].astype(float).clip(0.0, 1.0)
 
-fig, ax = plt.subplots(figsize=(16, 7), dpi = 200)
+fig, ax = plt.subplots(figsize=(16, 7), dpi = 300)
 
 # Fixed X axis 0..1
 ax.set_xlim(0, 1)
@@ -294,11 +307,20 @@ for i in range(len(df)):
 
     if img_path is not None and img_path.exists():
         im = Image.open(img_path).convert("RGBA")
+        im = trim_transparent(im)  # padding kırp
+        
+        TARGET_W = 420  # daha keskin görünür (320-520 deneyebilirsin)
+        zoom = TARGET_W / max(im.size[0], 1)
 
-        # normalize width
-        im = resize_to_width(im, TARGET_W)
 
         imagebox = OffsetImage(im, zoom=1.0)  # draw the resized image as-is
+        arr = np.array(im)
+        imagebox = OffsetImage(
+            arr,
+            zoom=zoom,
+            resample=True,
+            interpolation="lanczos"
+        )
         ab = AnnotationBbox(
             imagebox,
             (x, y),
