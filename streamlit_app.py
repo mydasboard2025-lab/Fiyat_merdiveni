@@ -302,7 +302,7 @@ for i in range(len(df)):
 
     if img_path is not None and img_path.exists():
         im = Image.open(img_path).convert("RGBA")
-        im = trim_transparent(im, alpha_threshold=40, pad=3)  # remove transparent padding
+        # im = trim_transparent(im, alpha_threshold=40, pad=3)  # remove transparent padding
 
         zoom = TARGET_W / max(im.size[0], 1)
 
@@ -311,7 +311,7 @@ for i in range(len(df)):
             arr,
             zoom=zoom,
             resample=True,
-            interpolation="lanczos"
+            interpolation="hanning"
         )
         ab = AnnotationBbox(
             imagebox,
