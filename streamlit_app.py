@@ -88,17 +88,17 @@ def list_all_image_options(brands: list[str]) -> list[str]:
 
 
 def resize_to_width(im: Image.Image, target_w: int) -> Image.Image:
-    """
-    Resize PIL image to target width while keeping aspect ratio.
-    Uses LANCZOS for good quality.
-    """
     w, h = im.size
     if w == 0 or target_w <= 0:
         return im
     scale = target_w / float(w)
     new_w = max(1, int(w * scale))
     new_h = max(1, int(h * scale))
-    return im.resize((new_w, new_h), Image.LANCZOS)
+
+    im2 = im.copy()
+    im2.thumbnail((new_w, new_h), Image.Resampling.LANCZOS)
+    return im2
+
 
 
 BRANDS = ["bmw", "mercedes"]
