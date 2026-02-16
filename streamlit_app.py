@@ -296,7 +296,7 @@ ax.set_ylim(min_p - rng * 0.12, max_p + rng * 0.28)
 ax.yaxis.set_major_formatter(mticker.FuncFormatter(lambda v, pos: format_try(v)))
 
 # Image placement spacing
-IMG_OFFSET_Y = 38  # image up
+IMG_OFFSET_Y = 34  # image up
 MODEL_OFFSET_Y = -26  # model text down
 DETAIL_OFFSET_Y = -44  # detail text further down
 
