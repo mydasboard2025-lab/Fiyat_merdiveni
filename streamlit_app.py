@@ -323,7 +323,7 @@ for i in range(len(df)):
     if img_path is not None and img_path.exists():
         im = Image.open(img_path).convert("RGBA")
         if b == "audi":
-            im = remove_dark_background(im, thr=35)
+            im = remove_dark_background(im, thr=25)
 
         # im = trim_transparent(im, alpha_threshold=40, pad=3)  # remove transparent padding
 
