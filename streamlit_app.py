@@ -269,7 +269,7 @@ if missing.any():
 df["x"] = df["x_pos_num"].astype(float).clip(0.0, 1.0)
 
 # Higher DPI for sharper render
-fig, ax = plt.subplots(figsize=(20, 9), dpi=300)
+fig, ax = plt.subplots(figsize=(20, 12), dpi=300)
 
 ax.set_xlim(0, 1)
 ax.margins(x=0)
@@ -301,7 +301,7 @@ MODEL_OFFSET_Y = -26  # model text down
 DETAIL_OFFSET_Y = -44  # detail text further down
 
 # Target display width for images (in pixels, approx)
-TARGET_W = 250
+TARGET_W = 300
 
 for i in range(len(df)):
     x = float(df.loc[i, "x"])
