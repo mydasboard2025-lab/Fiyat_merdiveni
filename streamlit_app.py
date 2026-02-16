@@ -102,7 +102,7 @@ def trim_transparent(im: Image.Image, alpha_threshold: int = 35, pad: int = 2) -
 
 
 
-BRANDS = ["bmw", "mercedes"]
+BRANDS = ["bmw", "mercedes", "audi"]
 all_img_options = list_all_image_options(BRANDS)
 
 
