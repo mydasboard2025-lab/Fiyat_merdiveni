@@ -396,7 +396,7 @@ if show_labels:
 ax.grid(True, axis="y", linestyle="--", alpha=0.25)
 
 fig.tight_layout()
-st.pyplot(fig, use_container_width=True)
+st.pyplot(fig, use_container_width=False)
 
 with st.expander("Veri tablosu"):
     out_cols = ["model", "price_list_num", "discount_frac", "price_net_num", "gross_profit_str", "note", "x", "img_code"]
