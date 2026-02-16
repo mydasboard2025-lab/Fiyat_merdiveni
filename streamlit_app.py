@@ -15,6 +15,26 @@ st.title("Fiyat Merdiveni")
 
 
 # ---------- Helpers ----------
+def remove_dark_background(im: Image.Image, thr: int = 35) -> Image.Image:
+    """
+    Koyu arka planı (siyaha yakın) şeffaf yapar.
+    thr yükseldikçe daha fazla alan silinir.
+    """
+    if im.mode != "RGBA":
+        im = im.convert("RGBA")
+
+    arr = np.array(im).astype(np.uint8)
+    rgb = arr[:, :, :3]
+    alpha = arr[:, :, 3]
+
+    # Koyu piksel maskesi (R,G,B hepsi düşükse)
+    dark = (rgb[:, :, 0] < thr) & (rgb[:, :, 1] < thr) & (rgb[:, :, 2] < thr)
+
+    # sadece arka planı şeffaf yap
+    alpha[dark] = 0
+    arr[:, :, 3] = alpha
+    return Image.fromarray(arr, mode="RGBA")
+
 def parse_money(x):
     if x is None:
         return None
@@ -302,6 +322,9 @@ for i in range(len(df)):
 
     if img_path is not None and img_path.exists():
         im = Image.open(img_path).convert("RGBA")
+        if b == "audi":
+            im = remove_dark_background(im, thr=45)
+
         # im = trim_transparent(im, alpha_threshold=40, pad=3)  # remove transparent padding
 
         zoom = TARGET_W / max(im.size[0], 1)
