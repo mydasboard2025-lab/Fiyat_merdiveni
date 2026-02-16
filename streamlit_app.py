@@ -395,7 +395,7 @@ if show_labels:
 
 ax.grid(True, axis="y", linestyle="--", alpha=0.25)
 
-plt.subplots_adjust(bottom=0.14, top=0.90)
+plt.subplots_adjust(bottom=0.20, top=0.90)
 fig.tight_layout()
 st.pyplot(fig, use_container_width=False)
 
