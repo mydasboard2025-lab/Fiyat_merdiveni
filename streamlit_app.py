@@ -269,7 +269,7 @@ if missing.any():
 df["x"] = df["x_pos_num"].astype(float).clip(0.0, 1.0)
 
 # Higher DPI for sharper render
-fig, ax = plt.subplots(figsize=(20, 12), dpi=300)
+fig, ax = plt.subplots(figsize=(20, 11), dpi=300)
 
 ax.set_xlim(0, 1)
 ax.margins(x=0)
@@ -395,7 +395,7 @@ if show_labels:
 
 ax.grid(True, axis="y", linestyle="--", alpha=0.25)
 
-plt.subplots_adjust(bottom=0.20, top=0.90)
+plt.subplots_adjust(bottom=0.19, top=0.90)
 fig.tight_layout()
 st.pyplot(fig, use_container_width=False)
 
