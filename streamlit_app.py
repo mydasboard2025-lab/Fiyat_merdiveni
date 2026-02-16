@@ -301,7 +301,7 @@ MODEL_OFFSET_Y = -26  # model text down
 DETAIL_OFFSET_Y = -44  # detail text further down
 
 # Target display width for images (in pixels, approx)
-TARGET_W = 240
+TARGET_W = 250
 
 for i in range(len(df)):
     x = float(df.loc[i, "x"])
@@ -334,7 +334,7 @@ for i in range(len(df)):
             arr,
             zoom=zoom,
             resample=True,
-            interpolation="hanning"
+            interpolation="nearest"
         )
         ab = AnnotationBbox(
             imagebox,
