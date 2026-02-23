@@ -325,7 +325,7 @@ for i in range(len(df)):
 
         # im = trim_transparent(im, alpha_threshold=40, pad=3)  # remove transparent padding
 
-        zoom = TARGET_W / max(im.size[0], 1)
+        base_zoom = TARGET_W / max(im.size[0], 1)
         if b == "audi":
             zoom = base_zoom * 1.35   # Audi %35 daha büyük
         else:
