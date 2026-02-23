@@ -328,6 +328,8 @@ for i in range(len(df)):
         base_zoom = TARGET_W / max(im.size[0], 1)
         if b == "audi":
             zoom = base_zoom * 1.3   # Audi %35 daha büyük
+        elif b == "mercedes":
+            zoom = base_zoom * 1.1
         else:
             zoom = base_zoom
 
