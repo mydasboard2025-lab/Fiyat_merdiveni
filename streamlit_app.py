@@ -297,8 +297,8 @@ ax.yaxis.set_major_formatter(mticker.FuncFormatter(lambda v, pos: format_try(v))
 
 # Image placement spacing
 IMG_OFFSET_Y = 34  # image up
-MODEL_OFFSET_Y = -28  # model text down
-DETAIL_OFFSET_Y = -46  # detail text further down
+MODEL_OFFSET_Y = -34  # model text down
+DETAIL_OFFSET_Y = -47  # detail text further down
 
 # Target display width for images (in pixels, approx)
 TARGET_W = 340
