@@ -329,7 +329,7 @@ for i in range(len(df)):
         if b == "audi":
             zoom = base_zoom * 1.2   # Audi %20 daha büyük
         elif b == "mercedes":
-            zoom = base_zoom * 1.1
+            zoom = base_zoom * 1.2
         elif b == "bmw":
             zoom = base_zoom * 1.2
 
