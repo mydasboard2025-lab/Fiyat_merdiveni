@@ -333,6 +333,8 @@ for i in range(len(df)):
             zoom = base_zoom * 1.2
         elif b == "bmw":
             zoom = base_zoom * 1.13
+        if sel.endswith("q3_suv"):
+            zoom = zoom * 0.75
 
         arr = np.array(im)
         imagebox = OffsetImage(
