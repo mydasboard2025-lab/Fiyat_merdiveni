@@ -366,7 +366,7 @@ if show_labels:
 
         model_offset = MODEL_OFFSET_Y
         if sel.startswith("audi"):
-            model_offset = MODEL_OFFSET_Y + 25
+            model_offset = MODEL_OFFSET_Y + 65
             
         ax.annotate(
             model,
