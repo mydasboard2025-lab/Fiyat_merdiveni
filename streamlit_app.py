@@ -328,11 +328,11 @@ for i in range(len(df)):
 
         base_zoom = TARGET_W / max(im.size[0], 1)
         if b == "audi":
-            zoom = base_zoom * 1.29   # Audi %20 daha büyük
+            zoom = base_zoom * 1.3   # Audi %20 daha büyük
         elif b == "mercedes":
             zoom = base_zoom * 1.2
         elif b == "bmw":
-            zoom = base_zoom * 1.15
+            zoom = base_zoom * 1.13
 
         arr = np.array(im)
         imagebox = OffsetImage(
