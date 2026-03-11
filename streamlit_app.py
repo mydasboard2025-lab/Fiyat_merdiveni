@@ -365,8 +365,8 @@ if show_labels:
         detail_offset = DETAIL_OFFSET_Y
 
         if sel.startswith("audi"):
-            model_offset = MODEL_OFFSET_Y + 15
-            detail_offset = DETAIL_OFFSET_Y + 15
+            model_offset = MODEL_OFFSET_Y + 12
+            detail_offset = DETAIL_OFFSET_Y + 12
         elif sel.startswith("bmw"):
             model_offset = MODEL_OFFSET_Y - 8
             detail_offset = DETAIL_OFFSET_Y - 8
