@@ -291,7 +291,7 @@ ax.set_xlabel("")
 ax.set_ylabel("Fiyat (₺)")
 
 # More top/bottom margin so images/labels won't overflow
-ax.set_ylim(min_p - rng * 0.12, max_p + rng * 0.28)
+ax.set_ylim(min_p - rng * 0.12, max_p + rng * 0.3)
 
 ax.yaxis.set_major_formatter(mticker.FuncFormatter(lambda v, pos: format_try(v)))
 
@@ -359,6 +359,18 @@ if show_labels:
         x = float(df.loc[i, "x"])
         y = float(df.loc[i, y_col])
 
+        sel = str(df.loc[i, "img_code"]).strip().lower()
+
+        model_offset = MODEL_OFFSET_Y
+        detail_offset = DETAIL_OFFSET_Y
+
+        if sel.startswith("audi"):
+            model_offset = MODEL_OFFSET_Y + 15
+            detail_offset = DETAIL_OFFSET_Y + 15
+        elif sel.startswith("bmw"):
+            model_offset = MODEL_OFFSET_Y - 8
+            detail_offset = DETAIL_OFFSET_Y - 8
+
         model = df.loc[i, "model"]
         price_show = df.loc[i, y_col]
         discount = df.loc[i, "discount_frac"]
@@ -369,7 +381,7 @@ if show_labels:
             model,
             (x, y),
             textcoords="offset points",
-            xytext=(0, MODEL_OFFSET_Y),
+            xytext=(0, model_offset),
             ha="center",
             va="top",
             fontsize=11,
@@ -391,7 +403,7 @@ if show_labels:
             details,
             (x, y),
             textcoords="offset points",
-            xytext=(0, DETAIL_OFFSET_Y),
+            xytext=(0, detail_offset),
             ha="center",
             va="top",
             fontsize=8,
