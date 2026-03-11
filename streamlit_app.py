@@ -296,13 +296,10 @@ ax.set_ylim(min_p - rng * 0.12, max_p + rng * 0.28)
 ax.yaxis.set_major_formatter(mticker.FuncFormatter(lambda v, pos: format_try(v)))
 
 # Image placement spacing
-IMG_OFFSET_Y = 38  # image up
+IMG_OFFSET_Y = 36  # image up
 MODEL_OFFSET_Y = -35  # model text down
 DETAIL_OFFSET_Y = -45  # detail text further down
 
-model_offset = MODEL_OFFSET_Y
-if sel.startswith("audi"):
-    model_offset = MODEL_OFFSET_Y + 15
 
 # Target display width for images (in pixels, approx)
 TARGET_W = 340
