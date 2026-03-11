@@ -366,10 +366,10 @@ if show_labels:
 
         if sel.startswith("audi"):
             model_offset = MODEL_OFFSET_Y + 11
-            detail_offset = DETAIL_OFFSET_Y + 10
+            detail_offset = DETAIL_OFFSET_Y + 8
         elif sel.startswith("bmw"):
             model_offset = MODEL_OFFSET_Y - 8
-            detail_offset = DETAIL_OFFSET_Y - 7
+            detail_offset = DETAIL_OFFSET_Y - 6
 
         model = df.loc[i, "model"]
         price_show = df.loc[i, y_col]
