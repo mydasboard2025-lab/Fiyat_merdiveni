@@ -300,6 +300,10 @@ IMG_OFFSET_Y = 38  # image up
 MODEL_OFFSET_Y = -35  # model text down
 DETAIL_OFFSET_Y = -45  # detail text further down
 
+model_offset = MODEL_OFFSET_Y
+if sel.startswith("audi"):
+    model_offset = MODEL_OFFSET_Y + 15
+
 # Target display width for images (in pixels, approx)
 TARGET_W = 340
 
@@ -363,10 +367,6 @@ if show_labels:
         discount = df.loc[i, "discount_frac"]
         gp = df.loc[i, "gross_profit_str"]
         note = df.loc[i, "note"]
-
-        model_offset = MODEL_OFFSET_Y
-        if sel.startswith("audi"):
-            model_offset = MODEL_OFFSET_Y + 65
             
         ax.annotate(
             model,
