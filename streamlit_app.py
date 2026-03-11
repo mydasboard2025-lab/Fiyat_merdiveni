@@ -364,6 +364,10 @@ if show_labels:
         gp = df.loc[i, "gross_profit_str"]
         note = df.loc[i, "note"]
 
+        model_offset = MODEL_OFFSET_Y
+        if sel.startswith("audi"):
+            model_offset = MODEL_OFFSET_Y + 15
+            
         ax.annotate(
             model,
             (x, y),
@@ -371,7 +375,7 @@ if show_labels:
             xytext=(0, MODEL_OFFSET_Y),
             ha="center",
             va="top",
-            fontsize=10,
+            fontsize=11,
             fontweight="bold",
             color="#1f77b4",
         )
